@@ -1,6 +1,7 @@
 module MQTT
 
-import Base: connect, read, write, get
+import Base: read, write, get
+import Distributed: Future
 
 include("utils.jl")
 include("packet.jl")
@@ -14,16 +15,16 @@ include("net.jl")
 include("client.jl")
 
 export
-AT_MOST_ONCE,
-AT_LEAST_ONCE,
-EXACTLY_ONCE,
-Client,
-ConnectOpts,
-get,
-connect,
-disconnect,
-subscribe,
-unsubscribe,
-publish
+    AT_MOST_ONCE,
+    AT_LEAST_ONCE,
+    EXACTLY_ONCE,
+    Client,
+    ConnectOpts,
+    get,
+    connect,
+    disconnect,
+    subscribe,
+    unsubscribe,
+    publish
 
 end

@@ -3,7 +3,7 @@ struct Unsubscribe <: HasId
     id::UInt16
     topics::Array{String}
 end
-Unsubscribe(topics::Array{String}) = Unsubscribe(convert(UInt8, UNSUBSCRIBE) | 0x02, 0x0000, topics)
+Unsubscribe(topics::Array{String}) = Unsubscribe(UInt8(UNSUBSCRIBE) | 0x02, 0x0000, topics)
 Unsubscribe(packet::Unsubscribe, id::UInt16) = Unsubscribe(packet.header, id, packet.topics)
 
 function write(s::IO, packet::Unsubscribe)
@@ -19,5 +19,5 @@ struct Unsuback <: Ack
     header::UInt8
     id::UInt16
 end
-Unsuback(id) = Unsuback(UNSUBACK, id)
+Unsuback(id) = Unsuback(UInt8(UNSUBACK), id)
 Base.show(io::IO, x::Unsuback) = print(io, "unsuback[id: ", x.id, "]")

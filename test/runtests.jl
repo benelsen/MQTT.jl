@@ -1,8 +1,7 @@
 import Base: read, write, close
 import MQTT: read_len, Message
-using Base.Test, MQTT
+using Test, MQTT
 
-#include("smoke.jl")
+# include("smoke.jl")
 include("mocksocket.jl")
 include("packet.jl")
-include("unittests.jl")

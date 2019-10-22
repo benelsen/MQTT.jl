@@ -1,8 +1,8 @@
-info("Running packet tests")
+@info "Running packet tests"
 
 function on_msg(topic, payload)
     @test topic == "abc"
-    @test String(payload)== "qwerty"
+    @test String(payload) == "qwerty"
 end
 
 function on_disconnect(reason)
@@ -67,47 +67,47 @@ function test()
 
     last_id::UInt16 = 0x0001
 
-    #info("Testing connect")
+    @info "Testing connect"
     connect(client, opts)
     tfh::TestFileHandler = client.io
     @test is_out_correct("data/output/connect.dat", tfh.out_channel)
     # CONNACK is automatically being sent in connect call
 
-    #info("Testing subscribe")
+    @info "Testing subscribe"
     subscribe(client, ("abc", AT_LEAST_ONCE), ("cba", AT_MOST_ONCE), async=true)
     @test is_out_correct("data/output/subreq.dat", tfh.out_channel, next_id(client))
     put_from_file(tfh, "data/input/suback.dat", client.last_id)
 
-    #info("Testing unsubscribe")
+    @info "Testing unsubscribe"
     unsubscribe(client, "abc", "cba", async=true)
     @test is_out_correct("data/output/unsubreq.dat", tfh.out_channel, next_id(client))
     put_from_file(tfh, "data/input/unsuback.dat", client.last_id)
 
-    info("Testing receive publish QOS 0")
+    @info "Testing receive publish QOS 0"
     put_from_file(tfh, "data/input/qos0pub.dat")
 
-    info("Testing receive publish QOS 1")
+    @info "Testing receive publish QOS 1"
     put_from_file(tfh, "data/input/qos1pub.dat", last_id)
     @test is_out_correct("data/output/puback.dat", tfh.out_channel, last_id)
     #last_id += 1
 
-    info("Testing receive publish QOS 2")
+    @info "Testing receive publish QOS 2"
     put_from_file(tfh, "data/input/qos2pub.dat", last_id)
     @test is_out_correct("data/output/pubrec.dat", tfh.out_channel, last_id)
     put_from_file(tfh, "data/input/pubrel.dat", last_id)
     @test is_out_correct("data/output/pubcomp.dat", tfh.out_channel, last_id)
     #last_id += 1
 
-    info("Testing send publish QOS 0")
+    @info "Testing send publish QOS 0"
     publish(client, "test1", "QOS_0", qos=AT_MOST_ONCE, async=true)
     @test is_out_correct("data/output/qos0pub.dat", tfh.out_channel)
 
-    info("Testing send publish QOS 1")
+    @info "Testing send publish QOS 1"
     publish(client, "test2", "QOS_1", qos=AT_LEAST_ONCE, async=true)
     @test is_out_correct("data/output/qos1pub.dat", tfh.out_channel, next_id(client))
     put_from_file(tfh, "data/input/puback.dat", client.last_id)
 
-    info("Testing send publish QOS 2")
+    @info "Testing send publish QOS 2"
     f = publish(client, "test3", "test", qos=EXACTLY_ONCE, async=true)
     id = next_id(client)
     @test is_out_correct("data/output/qos2pub.dat", tfh.out_channel, id)
@@ -117,13 +117,13 @@ function test()
 
     get(f)
 
-    info("Testing disconnect")
+    @info "Testing disconnect"
     disconnect(client)
     @test is_out_correct("data/output/disco.dat", tfh.out_channel)
 
 
     #This has to be in it's own connect flow to not interfere with other messages
-    info("Testing keep alive with response")
+    @info "Testing keep alive with response"
     client = Client(on_msg, on_disconnect_ping, 1)
     opts = ConnectOpts(() -> TestFileHandler())
     opts.client_id = "TestID"
@@ -135,11 +135,11 @@ function test()
     @test is_out_correct("data/output/pingreq.dat", tfh.out_channel)
     put_from_file(tfh, "data/input/pingresp.dat")
 
-    info("Testing keep alive without response")
+    @info "Testing keep alive without response"
     sleep(1.1)
     @test is_out_correct("data/output/pingreq.dat", tfh.out_channel)
 
-    info("Testing unwanted pingresp")
+    @info "Testing unwanted pingresp"
     client = Client(on_msg, on_disconnect_pingresp, 60)
     opts = ConnectOpts(() -> TestFileHandler())
     opts.client_id = "TestID"

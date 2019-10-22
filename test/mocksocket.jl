@@ -1,3 +1,5 @@
+import Base: read, read!, close, write, put!
+
 # commands
 const CONNECT = 0x10
 const CONNACK = 0x20
@@ -117,10 +119,6 @@ end
 
 function read_all_to_arr(filename)
     file = open(filename, "r")
-    data = Vector{UInt8}()
-    while !eof(file)
-        append!(data, read(file, UInt8))
-    end
-    close(file)
+    data = read(file)
     return data
 end

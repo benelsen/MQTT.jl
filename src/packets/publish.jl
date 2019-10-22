@@ -3,7 +3,7 @@ struct Publish <: Packet
     id::UInt16
     message::Message
 end
-Publish(message::Message) = Publish(convert(UInt8, PUBLISH) | ((message.dup & 0x1) << 3) | (convert(UInt8, message.qos) << 1) | message.retain, 0x0000, message)
+Publish(message::Message) = Publish(UInt8(PUBLISH) | ((message.dup & 0x1) << 3) | (UInt8(message.qos) << 1) | message.retain, 0x0000, message)
 Publish(packet::Publish, id::UInt16) = Publish(packet.header, id, packet.message)
 
 function read(s::IO, flags::UInt8, ::Type{Publish})
@@ -16,7 +16,7 @@ function read(s::IO, flags::UInt8, ::Type{Publish})
         id = mqtt_read(s, UInt16)
     end
     payload = take!(s)
-    return Publish(PUBLISH, id, Message(dup, qos, retain, topic, payload))
+    return Publish(UInt8(PUBLISH), id, Message(dup, QOS(qos), retain, topic, payload))
 end
 
 function write(s::IO, packet::Publish)
@@ -41,14 +41,14 @@ struct Puback <: Ack
     header::UInt8
     id::UInt16
 end
-Puback(id) = Puback(PUBACK, id)
+Puback(id) = Puback(UInt8(PUBACK), id)
 Base.show(io::IO, x::Puback) = print(io, "puback[id: ", x.id, "]")
 
 struct Pubrec <: Ack
     header::UInt8
     id::UInt16
 end
-Pubrec(id) = Pubrec(PUBREC, id)
+Pubrec(id) = Pubrec(UInt8(PUBREC), id)
 has_id(packet::Pubrec) = false
 Base.show(io::IO, x::Pubrec) = print(io, "pubrec[id: ", x.id, "]")
 
@@ -56,7 +56,7 @@ struct Pubrel <: Ack
     header::UInt8
     id::UInt16
 end
-Pubrel(id) = Pubrel(convert(UInt8, PUBREL) | 0x02, id)
+Pubrel(id) = Pubrel(UInt8(PUBREL) | 0x02, id)
 has_id(packet::Pubrel) = false
 Base.show(io::IO, x::Pubrel) = print(io, "pubrel[id: ", x.id, "]")
 
@@ -64,5 +64,5 @@ struct Pubcomp <: Ack
     header::UInt8
     id::UInt16
 end
-Pubcomp(id) = Pubcomp(PUBCOMP, id)
+Pubcomp(id) = Pubcomp(UInt8(PUBCOMP), id)
 Base.show(io::IO, x::Pubcomp) = print(io, "pubcomp[id: ", x.id, "]")

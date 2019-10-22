@@ -25,7 +25,7 @@ end
 
 function write_len(s::IO, len::Int64)
     while true
-        b = convert(UInt8, mod(len, 128))
+        b = UInt8(mod(len, 128))
         len = div(len, 128)
         if len > 0
             b = b | 0x80

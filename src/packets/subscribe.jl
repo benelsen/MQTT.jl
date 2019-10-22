@@ -6,7 +6,7 @@ struct Subscribe <: HasId
     id::UInt16
     topics::Array{Topic}
 end
-Subscribe(topics::Array{Topic}) = Subscribe(convert(UInt8, SUBSCRIBE) | 0x02, 0x0000, topics)
+Subscribe(topics::Array{Topic}) = Subscribe(UInt8(SUBSCRIBE) | 0x02, 0x0000, topics)
 Subscribe(packet::Subscribe, id::UInt16) = Subscribe(packet.header, id, packet.topics)
 
 function write(s::IO, packet::Subscribe)
@@ -24,5 +24,5 @@ struct Suback <: Ack
     header::UInt8
     id::UInt16
 end
-Suback(id) = Suback(SUBACK, id)
+Suback(id) = Suback(UInt8(SUBACK), id)
 Base.show(io::IO, x::Suback) = print(io, "suback[id: ", x.id, "]")

@@ -1,4 +1,5 @@
 using Base.Threads
+import Sockets
 
 struct MQTTException <: Exception
     msg::AbstractString
@@ -12,21 +13,21 @@ mutable struct ConnectOpts
     clean_session::Bool
     keep_alive::UInt16
     client_id::String
-    will::Nullable{Message}
-    username::Nullable{String}
-    password::Nullable{Array{UInt8}}
+    will::Union{Nothing, Message}
+    username::Union{Nothing, String}
+    password::Union{Nothing, Array{UInt8}}
     get_io::Function
 end
-ConnectOpts(get_io::Function) = ConnectOpts(true, 0x0000, "", Nullable{Message}(), Nullable{String}(), Nullable{Array{UInt8}}(), get_io)
-ConnectOpts(host::AbstractString, port::Integer=1883) = ConnectOpts(() -> connect(host, port))
-ConnectOpts() = ConnectOpts(() -> TCPSocket())
+ConnectOpts(get_io::Function) = ConnectOpts(true, 0x0000, "", nothing, nothing, nothing, get_io)
+ConnectOpts(host::AbstractString, port::Integer=1883) = ConnectOpts(() -> Sockets.connect(host, port))
+ConnectOpts() = ConnectOpts(() -> Sockets.TCPSocket())
 
 const CONNACK_ERRORS = [
-"connection refused unacceptable protocol version",
-"connection refused identifier rejected",
-"connection refused server unavailable",
-"connection refused bad user name or password",
-"connection refused not authorized"]
+    "connection refused unacceptable protocol version",
+    "connection refused identifier rejected",
+    "connection refused server unavailable",
+    "connection refused bad user name or password",
+    "connection refused not authorized"]
 
 mutable struct Client
     on_msg::Function
@@ -44,19 +45,19 @@ mutable struct Client
     io::IO
 
     Client(on_msg::Function, on_disconnect::Function, ping_timeout::Int64) = new(
-    on_msg,
-    on_disconnect,
-    ping_timeout,
-    ConnectOpts(),
-    0x0000,
-    Dict{UInt16, Future}(),
-    Channel{Tuple{Packet, Future}}(60),
-    Atomic{UInt8}(0x00),
-    Atomic{Float64}(),
-    Atomic{Float64}(),
-    Atomic{UInt16}(),
-    Timer(0, 0),
-    TCPSocket())
+        on_msg,
+        on_disconnect,
+        ping_timeout,
+        ConnectOpts(),
+        0x0000,
+        Dict{UInt16, Future}(),
+        Channel{Tuple{Packet, Future}}(60),
+        Atomic{UInt8}(0x00),
+        Atomic{Float64}(),
+        Atomic{Float64}(),
+        Atomic{UInt16}(),
+        Timer(0.0, interval = 0),
+        Sockets.TCPSocket())
 end
 
 function packet_id(c::Client)
@@ -101,27 +102,31 @@ function send_packet(c::Client, packet::Packet, async::Bool=false)
 end
 
 function in_loop(c::Client)
-    println("in started")
+    @debug "in started"
     try
         while true
+            @debug "in wait"
             packet = read_packet(c.io)
             atomic_xchg!(c.last_received, time())
-            println("in ", packet)
+            @debug "in " packet
             handle(c, packet)
         end
     catch e
+        @debug "in error"
+        @debug e
         if isa(e, EOFError)
             e = MQTTException("connection lost")
         end
         disconnect(c, e)
     end
-    println("in stopped")
+    @debug "in stopped"
 end
 
 function out_loop(c::Client)
-    println("out started")
+    @debug "out started"
     try
         while true
+            @debug "out wait"
             packet, future = take!(c.queue)
             # generate ids for packets that need one
             if needs_id(packet)
@@ -134,38 +139,44 @@ function out_loop(c::Client)
             end
             atomic_xchg!(c.last_sent, time())
             write_packet(c.io, packet)
-            println("out ", packet)
+            @debug "out " packet
             # complete the futures of packets that don't need acknowledgment
             if !has_id(packet)
                 put!(future, 0)
             end
         end
     catch e
+        @debug "out error"
+        @debug e
         if isa(e, ArgumentError)
             e = MQTTException("connection lost")
         end
         disconnect(c, e)
     end
-    println("out stopped")
+    @debug "out stopped"
 end
 
 function keep_alive_timer(c::Client)
     check_interval = (c.opts.keep_alive > 10) ? 5 : c.opts.keep_alive / 2
-    t = Timer(0, check_interval)
-    waiter = Task(function()
-    println("keep alive started")
-    while isopen(t)
-        keep_alive(c)
-        try
-            wait(t)
-        catch e
-            isa(e, EOFError) || rethrow(exc)
+    @debug check_interval
+    t = Timer(0, interval = check_interval)
+    waiter = Task(
+        function()
+            @debug "keep alive started"
+            while isopen(t)
+                keep_alive(c)
+                try
+                    wait(t)
+                catch e
+                    isa(e, EOFError) || rethrow()
+                end
+                # yield()
+            end
+            @debug "keep alive stopped"
         end
-    end
-    println("keep alive stopped")
-end)
-yield(waiter)
-return t
+    )
+    yield(waiter)
+    return t
 end
 
 function keep_alive(c::Client)
@@ -203,7 +214,7 @@ function handle(c::Client, packet::Publish)
     elseif packet.message.qos == EXACTLY_ONCE
         send_packet(c, Pubrec(packet.id), true)
     end
-    @schedule c.on_msg(packet.message.topic, packet.message.payload)
+    @async c.on_msg(packet.message.topic, packet.message.payload)
 end
 
 function handle(c::Client, packet::Pubrec)
@@ -235,8 +246,8 @@ function connect(client::Client, opts::ConnectOpts; async::Bool=false)
     client.queue = Channel{Tuple{Packet, Future}}(client.queue.sz_max)
     atomic_xchg!(client.disconnecting, 0x00)
 
-    @schedule out_loop(client)
-    @schedule in_loop(client)
+    @async out_loop(client)
+    @async in_loop(client)
     if client.opts.keep_alive > 0x0000
         client.keep_alive_timer = keep_alive_timer(client)
     end
@@ -244,7 +255,7 @@ function connect(client::Client, opts::ConnectOpts; async::Bool=false)
     send_packet(client, Connect(opts.clean_session, opts.keep_alive, opts.client_id, opts.will, opts.username, opts.password), async)
 end
 
-function disconnect(client::Client, reason::Union{Exception,Void}=nothing)
+function disconnect(client::Client, reason::Union{Exception,Nothing}=nothing)
     # ignore errors while disconnecting
     if client.disconnecting[] == 0x00
         atomic_xchg!(client.disconnecting, 0x01)
@@ -253,8 +264,10 @@ function disconnect(client::Client, reason::Union{Exception,Void}=nothing)
             send_packet(client, Disconnect())
         end
         close(client.queue)
-        close(client.io)
+        Sockets.close(client.io)
         client.on_disconnect(reason)
+    else
+        @info("Already disconnecting")
     end
 end
 
@@ -274,4 +287,4 @@ end
 publish(client::Client, topic::String, payload::String;
     async::Bool=false,
     qos::QOS=AT_MOST_ONCE,
-    retain::Bool=false) = publish(client, topic, convert(Array{UInt8}, payload), async=async, qos=qos, retain=retain)
+    retain::Bool=false) = publish(client, topic, Vector{UInt8}(payload), async=async, qos=qos, retain=retain)
