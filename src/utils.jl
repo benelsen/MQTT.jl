@@ -23,7 +23,7 @@ function mqtt_write(stream::IO, x::Array{UInt8})
     write(stream, x)
 end
 
-function write_len(s::IO, len::Int64)
+function write_len(s::IO, len::Int)
     while true
         b = UInt8(mod(len, 128))
         len = div(len, 128)

@@ -32,7 +32,7 @@ const CONNACK_ERRORS = [
 mutable struct Client
     on_msg::Function
     on_disconnect::Function
-    ping_timeout::Int64
+    ping_timeout::Int
     opts::ConnectOpts
     last_id::UInt16
     in_flight::Dict{UInt16, Future}
@@ -44,7 +44,7 @@ mutable struct Client
     keep_alive_timer::Timer
     io::IO
 
-    Client(on_msg::Function, on_disconnect::Function, ping_timeout::Int64) = new(
+    Client(on_msg::Function, on_disconnect::Function, ping_timeout::Int) = new(
         on_msg,
         on_disconnect,
         ping_timeout,
