@@ -267,7 +267,7 @@ function disconnect(client::Client, reason::Union{Exception,Nothing}=nothing)
         Sockets.close(client.io)
         client.on_disconnect(reason)
     else
-        @info("Already disconnecting")
+        @debug("Already disconnecting")
     end
 end
 
