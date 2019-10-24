@@ -60,7 +60,7 @@ end
 
 next_id(c) = c.last_id + 0x0001
 
-function test()
+@testset "mock tests" begin
     client = Client(on_msg, on_disconnect, 60)
     opts = ConnectOpts(() -> TestFileHandler())
     opts.client_id = "TestID"
@@ -150,5 +150,3 @@ function test()
     put_from_file(tfh, "data/input/pingresp.dat")
     sleep(2)
 end
-
-test()
