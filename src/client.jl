@@ -16,13 +16,12 @@ mutable struct ConnectOpts
 end
 
 """
-    ConnectOpts(host, port=1883; <keyword arguments>)
+    ConnectOpts(host, [port=1883]; <keyword arguments>)
     ConnectOpts(get_io; <keyword arguments>)
 
 Create a `ConnectOpts` using the given hostname and port of the broker.
 
 # Arguments
-
 - `host::AbstractString`: host of the broker
 - `port::Integer=1883`: port of the broker
 
@@ -30,7 +29,6 @@ Create a `ConnectOpts` using the given hostname and port of the broker.
 - `get_io::Function`: function to create a new IO object (e.g. a `TCPSocket`)
 
 # Keywords
-
 - `username::Union{Nothing, String} = nothing`: username as a UTF-8 string
 - `password::Union{Nothing, Vector{UInt8}} = nothing`: password as a vector of bytes
 - `client_id::String = ""`: client id as a UTF-8 string.
@@ -43,7 +41,8 @@ Create a `ConnectOpts` using the given hostname and port of the broker.
 ```julia
 opts = ConnectOpts(
     "localhost";
-    username="myuser", password=Vector{UInt8}("secretpassword"),
+    username="myuser",
+    password=Vector{UInt8}("secretpassword"),
     client_id="my_mqtt_client"
 )
 ```
@@ -232,9 +231,7 @@ function keep_alive(c::Client)
     end
 end
 
-function handle(c::Client, packet::Ack)
-    complete(c, packet.id)
-end
+handle(c::Client, packet::Ack) = complete(c, packet.id)
 
 function handle(c::Client, packet::Connack)
     r = packet.session_present
@@ -253,17 +250,9 @@ function handle(c::Client, packet::Publish)
     @async c.on_message(packet.message.topic, packet.message.payload)
 end
 
-function handle(c::Client, packet::Pubrec)
-    send_packet(c, Pubrel(packet.id), true)
-end
-
-function handle(c::Client, packet::Pubrel)
-    send_packet(c, Pubcomp(packet.id), true)
-end
-
-function handle(c::Client, packet::Pingresp)
-    atomic_sub!(c.ping_outstanding, 0x0001)
-end
+handle(c::Client, packet::Pubrec) = send_packet(c, Pubrel(packet.id), true)
+handle(c::Client, packet::Pubrel) = send_packet(c, Pubcomp(packet.id), true)
+handle(c::Client, packet::Pingresp) = atomic_sub!(c.ping_outstanding, 0x0001)
 
 """
     connect(client, opts; [async=false])
@@ -271,13 +260,11 @@ end
 Connects to a broker using the specified options.
 
 # Arguments
-
 - `client::Client`: client needs to be instantiated before connecting, but can be
     reconnected using `connect`
 - `opts::ConnectOpts`: connection options to be used
 
 # Keywords
-
 -  `async::Bool`: if `true` a `Future` is returned, therwise the function blocks until
     the client is connected or the operation failed.
 
@@ -300,6 +287,16 @@ function connect(client::Client, opts::ConnectOpts; async::Bool=false)
     send_packet(client, Connect(opts.clean_session, opts.keep_alive, opts.client_id, opts.will, opts.username, opts.password), async)
 end
 
+"""
+    disconnect(client, [reason=nothing])
+
+Disconnects the `Client` instance gracefully, shuts down the background tasks and stores session state.
+
+# Arguments
+- `client::Client`: client to disconnect
+- `reason::Union{Exception,Nothing}=nothing`: reason for the disconnect
+    This is forwarded to the `on_disconnect` callback
+"""
 function disconnect(client::Client, reason::Union{Exception,Nothing}=nothing)
     # ignore errors while disconnecting
     if client.disconnecting[] == 0x00
@@ -316,20 +313,85 @@ function disconnect(client::Client, reason::Union{Exception,Nothing}=nothing)
     end
 end
 
-function subscribe(client::Client, topics::Topic...; async::Bool=false)
+"""
+    subscribe(client, topics...; [async=false])
+    subscribe(client, topics...; [qos=AT_MOST_ONCE], [async=false])
+
+Subscribes the `Client` instance, provided as a parameter, to the specified topics.
+
+# Arguments
+- `client::Client`: the client to subscribe to the topics
+- `topics...`: Topics to connect to.
+    This can either be a list of `Tuple{String, QoS}` where the first element is a topic
+    name and the second a QoS level, or a list of `String` topic names (`AT_MOST_ONCE` is implied unless otherwise specified with the `qos::QoS` keyword)
+
+# Keywords
+- `async::Bool=false`: If false the call blocks until the operation is complete
+- `qos::QoS=AT_MOST_ONCE`: QoS level to subscribe with
+"""
+function subscribe(
+    client::Client, topics::Topic...;
+    async::Bool=false
+)
     send_packet(client, Subscribe(collect(topics)), async)
 end
 
-function unsubscribe(client::Client, topics::String...; async::Bool=false)
+function subscribe(
+    client::Client, topics::AbstractString...;
+    qos::QoS=AT_MOST_ONCE, async::Bool=false
+)
+    send_packet(client, Subscribe(collect(zip(topics, Iterators.repeated(qos)))), async)
+end
+
+"""
+    unsubscribe(client, topics...; [async=false])
+
+This method unsubscribes the `Client` instance from the specified topics.
+
+# Arguments
+- `client::Client`: the client to unsubscribe from the topics
+- `topics::String...`: list of topics to unsubscribe from
+
+# Keywords
+- `async::Bool=false`: If false the call blocks until the operation is complete.
+"""
+function unsubscribe(
+    client::Client, topics::AbstractString...;
+    async::Bool=false
+)
     send_packet(client, Unsubscribe(collect(topics)), async)
 end
 
-function publish(client::Client, topic::String, payload::Array{UInt8};
-    async::Bool=false, qos::QOS=AT_MOST_ONCE, retain::Bool=false)
+"""
+    publish(client, topic, payload; <keyword arguments>)
+
+Publishes a message to the broker connected to the `Client` instance provided as a parameter.
+
+# Arguments
+- `client::Client`: The client to send the message over.
+- `topic::String`: The topic to publish on.
+    Normal rules for publish topics apply so "/" are allowed but no wildcards.
+- `payload::Union{String, Vector{UInt8}}`: payload to deliver.
+    This should be a `Vector{UInt8}`. `String` is automatically converted.
+    A zero length payload is allowed.
+
+# Keywords
+- `async::Bool=false`: If false the call blocks until the operation is complete.
+- `qos::QoS=AT_MOST_ONCE`: The MQTT quality of service to use for the message.
+    This has to be a QoS constant (AT_MOST_ONCE, AT_LEAST_ONCE, EXACTLY_ONCE).
+- `retain::Bool=false`: Whether or not the message should be retained by the broker.
+    This means the broker sends it to all clients who subscribe to this topic
+"""
+function publish(
+    client::Client, topic::AbstractString, payload::Vector{UInt8};
+    async::Bool=false, qos::QoS=AT_MOST_ONCE, retain::Bool=false
+)
     send_packet(client, Publish(Message(false, qos, retain, topic, payload)), async)
 end
 
-publish(client::Client, topic::String, payload::String;
-    async::Bool=false,
-    qos::QOS=AT_MOST_ONCE,
-    retain::Bool=false) = publish(client, topic, Vector{UInt8}(payload), async=async, qos=qos, retain=retain)
+function publish(
+    client::Client, topic::AbstractString, payload::AbstractString;
+    async::Bool=false, qos::QoS=AT_MOST_ONCE, retain::Bool=false
+)
+    publish(client, topic, Vector{UInt8}(payload); async=async, qos=qos, retain=retain)
+end
