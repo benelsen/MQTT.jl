@@ -9,8 +9,7 @@ This code builds a library which enables applications to connect to an MQTT brok
 
 This library supports: fully asynchronous operation, file persistence
 
-Contents
---------
+## Contents
  * [Installation](#installation)
  * [Testing](#testing)
  * [Usage](#usage)
@@ -18,7 +17,6 @@ Contents
     * [Basic example](#basic-example)
 
 ## Installation
-------------
 ```julia-repl
 pkg> add MQTT
 ```
@@ -28,7 +26,6 @@ julia> using Pkg; Pkg.add("MQTT")
 ```
 
 ## Testing
--------
 ```julia
 Pkg.test("MQTT")
 ```
