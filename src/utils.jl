@@ -5,16 +5,11 @@ function mqtt_read(s::IO, ::Type{String})
     return String(read(s, len))
 end
 
-function mqtt_write(stream::IO, x::Any)
-    write(stream, x)
-end
-
-function mqtt_write(stream::IO, x::UInt16)
-    write(stream, hton(x))
-end
+mqtt_write(stream::IO, x) = write(stream, x)
+mqtt_write(stream::IO, x::UInt16) = write(stream, hton(x))
 
 function mqtt_write(stream::IO, x::String)
-    mqtt_write(stream, convert(UInt16, length(x)))
+    mqtt_write(stream, convert(UInt16, ncodeunits(x)))
     write(stream, x)
 end
 
