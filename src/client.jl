@@ -174,18 +174,22 @@ function out_loop(c::Client)
         while true
             @debug "out wait"
             packet, future = take!(c.queue)
+
             # generate ids for packets that need one
             if needs_id(packet)
                 id = packet_id(c)
                 packet = typeof(packet)(packet, id)
             end
+
             # add the futures of packets that need acknowledgment to in flight
             if has_id(packet)
                 c.in_flight[packet.id] = future
             end
+
             atomic_xchg!(c.last_sent, time())
             write_packet(c.io, packet)
             @debug "out " packet
+
             # complete the futures of packets that don't need acknowledgment
             if !has_id(packet)
                 put!(future, 0)
@@ -247,7 +251,7 @@ handle(c::Client, packet::Ack) = complete(c, packet.id)
 function handle(c::Client, packet::Connack)
     r = packet.session_present
     if packet.return_code != 0
-        r = ErrorException(CONNACK_ERRORS[packet.return_code])
+        r = ErrorException(connack_return_codes[packet.return_code])
     end
     complete(c, 0x0000, r)
 end
