@@ -1,7 +1,7 @@
 struct Unsubscribe <: HasId
     header::UInt8
     id::UInt16
-    topics::Array{String}
+    topics::Vector{String}
 end
 Unsubscribe(topics::Array{String}) = Unsubscribe(UInt8(UNSUBSCRIBE) | 0x02, 0x0000, topics)
 Unsubscribe(packet::Unsubscribe, id::UInt16) = Unsubscribe(packet.header, id, packet.topics)
