@@ -34,12 +34,41 @@ write(s::IO, packet::Ack) = mqtt_write(s, packet.id)
 read(s::IO, flags::UInt8, t::Type{<: Ack}) = t(mqtt_read(s, UInt16))
 needs_id(packet::Ack) = false
 
+"""
+    Message(topic, payload; [dup=false], [qos=AT_MOST_ONCE], [retain=false])
+
+A container for a message with all required metadata.
+
+Can be used as a last will message.
+
+# Arguments
+- `topic::String`
+- `payload::Vector{UInt8}`
+
+# Keywords
+- `dup::Bool`: message is a duplicate
+- `qos::QoS`: QoS level with which the message should be send
+- `retain::Bool`: broker should retain the message
+
+"""
 struct Message
     dup::Bool
-    qos::QOS
+    qos::QoS
     retain::Bool
     topic::String
-    payload::Array{UInt8}
+    payload::Vector{UInt8}
 end
+
+function Message(
+    topic::String, payload::Vector{UInt8};
+    dup=false, qos=AT_MOST_ONCE, retain=false
+)
+    Message(dup, qos, retain, topic, payload)
+end
+
+function Message(topic::String, payload::AbstractString; kwargs...)
+    Message(topic, Vector{UInt8}(payload); kwargs...)
+end
+
 Base.show(io::IO, x::Message) = print(io, "[dup: ", x.dup,
     ", qos: ", x.qos, ", retain: ", x.retain, ", topic: ", x.topic, "]")

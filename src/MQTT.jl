@@ -20,6 +20,7 @@ export
     EXACTLY_ONCE,
     Client,
     ConnectOpts,
+    Message,
     get,
     connect,
     disconnect,
