@@ -64,6 +64,17 @@ function ConnectOpts(;kwargs...)
     ConnectOpts(() -> TCPSocket(); kwargs...)
 end
 
+"""
+    Client(on_message, on_disconnect, [ping_timeout=60])
+
+The client struct is used to store state for a MQTT session
+
+# Arguments
+- `on_message::Function`: function to be called upon receiving a publish message
+- `on_disconnect::Function`: function to be called when disconnected
+- `ping_timeout::UInt64=60`: seconds the client waits for the PINGRESP
+    after sending a PINGREQ before he disconnects
+"""
 mutable struct Client
     on_message::Function
     on_disconnect::Function
