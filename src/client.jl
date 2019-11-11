@@ -30,7 +30,7 @@ const CONNACK_ERRORS = [
     "connection refused not authorized"]
 
 mutable struct Client
-    on_msg::Function
+    on_message::Function
     on_disconnect::Function
     ping_timeout::Int
     opts::ConnectOpts
@@ -44,8 +44,8 @@ mutable struct Client
     keep_alive_timer::Timer
     io::IO
 
-    Client(on_msg::Function, on_disconnect::Function, ping_timeout::Int) = new(
-        on_msg,
+    Client(on_message::Function, on_disconnect::Function, ping_timeout::Int=60) = new(
+        on_message,
         on_disconnect,
         ping_timeout,
         ConnectOpts(),
@@ -214,7 +214,7 @@ function handle(c::Client, packet::Publish)
     elseif packet.message.qos == EXACTLY_ONCE
         send_packet(c, Pubrec(packet.id), true)
     end
-    @async c.on_msg(packet.message.topic, packet.message.payload)
+    @async c.on_message(packet.message.topic, packet.message.payload)
 end
 
 function handle(c::Client, packet::Pubrec)

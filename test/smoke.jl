@@ -6,7 +6,7 @@ condition = Condition()
 expected_topic = randstring(20)
 expected_payload = Vector{UInt8}(randstring(20))
 
-function on_msg(topic, payload)
+function on_message(topic, payload)
     @test topic == expected_topic
     @test payload == expected_payload
     notify(condition)
@@ -16,7 +16,7 @@ function on_disconnect(reason)
     @test reason == nothing
 end
 
-client = Client(on_msg, on_disconnect, 60)
+client = Client(on_message, on_disconnect, 60)
 opts = ConnectOpts("test.mosquitto.org")
 opts.keep_alive = 0x0006
 

@@ -1,6 +1,6 @@
 @info "Running packet tests"
 
-function on_msg(topic, payload)
+function on_message(topic, payload)
     @test topic == "abc"
     @test String(payload) == "qwerty"
 end
@@ -61,7 +61,7 @@ end
 next_id(c) = c.last_id + 0x0001
 
 @testset "mock tests" begin
-    client = Client(on_msg, on_disconnect, 60)
+    client = Client(on_message, on_disconnect, 60)
     opts = ConnectOpts(() -> TestFileHandler())
     opts.client_id = "TestID"
 
@@ -124,7 +124,7 @@ next_id(c) = c.last_id + 0x0001
 
     #This has to be in it's own connect flow to not interfere with other messages
     @info "Testing keep alive with response"
-    client = Client(on_msg, on_disconnect_ping, 1)
+    client = Client(on_message, on_disconnect_ping, 1)
     opts = ConnectOpts(() -> TestFileHandler())
     opts.client_id = "TestID"
     opts.keep_alive = 0x0001
@@ -140,7 +140,7 @@ next_id(c) = c.last_id + 0x0001
     @test is_out_correct("data/output/pingreq.dat", tfh.out_channel)
 
     @info "Testing unwanted pingresp"
-    client = Client(on_msg, on_disconnect_pingresp, 60)
+    client = Client(on_message, on_disconnect_pingresp, 60)
     opts = ConnectOpts(() -> TestFileHandler())
     opts.client_id = "TestID"
     opts.keep_alive = 0x0001

@@ -63,7 +63,7 @@ function on_disconnect(reason)
 end
 
 # Instantiate a client.
-client = Client(on_message, on_disconnect, 60)
+client = Client(on_message, on_disconnect)
 
 # instantiate connection options
 opts = ConnectOpts(broker)
