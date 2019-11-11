@@ -5,10 +5,6 @@ struct MQTTException <: Exception
     msg::AbstractString
 end
 
-"""
-    ConnectOpts(host, port=1883)
-Create a `ConnectOpts` using the given broker and default options.
-"""
 mutable struct ConnectOpts
     clean_session::Bool
     keep_alive::UInt16
@@ -18,16 +14,56 @@ mutable struct ConnectOpts
     password::Union{Nothing, Array{UInt8}}
     get_io::Function
 end
-ConnectOpts(get_io::Function) = ConnectOpts(true, 0x0000, "", nothing, nothing, nothing, get_io)
-ConnectOpts(host::AbstractString, port::Integer=1883) = ConnectOpts(() -> Sockets.connect(host, port))
-ConnectOpts() = ConnectOpts(() -> Sockets.TCPSocket())
 
-const CONNACK_ERRORS = [
-    "connection refused unacceptable protocol version",
-    "connection refused identifier rejected",
-    "connection refused server unavailable",
-    "connection refused bad user name or password",
-    "connection refused not authorized"]
+"""
+    ConnectOpts(host, port=1883; <keyword arguments>)
+    ConnectOpts(get_io; <keyword arguments>)
+
+Create a `ConnectOpts` using the given hostname and port of the broker.
+
+# Arguments
+
+- `host::AbstractString`: host of the broker
+- `port::Integer=1883`: port of the broker
+
+
+- `get_io::Function`: function to create a new IO object (e.g. a `TCPSocket`)
+
+# Keywords
+
+- `username::Union{Nothing, String} = nothing`: username as a UTF-8 string
+- `password::Union{Nothing, Vector{UInt8}} = nothing`: password as a vector of bytes
+- `client_id::String = ""`: client id as a UTF-8 string.
+    Zero-length string as an id is valid per MQTT 3.1.1 spec
+- `clean_session::Bool = true`: discard any stored session and create a new one
+- `keep_alive::UInt16 = 0x0000`: set maximum keep alive interval
+- `will::Union{Nothing, Message} = nothing`: a `Message` containing a will
+
+# Examples
+```julia
+opts = ConnectOpts(
+    "localhost";
+    username="myuser", password=Vector{UInt8}("secretpassword"),
+    client_id="my_mqtt_client"
+)
+```
+"""
+function ConnectOpts(
+    get_io::Function;
+    username::Union{Nothing, String}=nothing, password::Union{Nothing, Vector{UInt8}}=nothing,
+    client_id::String="", clean_session::Bool=true, keep_alive::UInt16=0x0000,
+    will::Union{Nothing, Message}=nothing
+)
+    ConnectOpts(clean_session, keep_alive, client_id, will, username, password, get_io)
+end
+
+function ConnectOpts(host::AbstractString, port::Integer=1883; kwargs...)
+    ConnectOpts(() -> Sockets.connect(host, port); kwargs...)
+end
+
+function ConnectOpts(;kwargs...)
+    ConnectOpts(() -> TCPSocket(); kwargs...)
+end
 
 mutable struct Client
     on_message::Function
