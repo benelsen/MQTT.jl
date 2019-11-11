@@ -20,19 +20,19 @@
     DISCONNECT = 0xE0)
 
 abstract type Packet end
-function write(s::IO, packet::Packet) end
-read(s::IO, flags::UInt8, t::Type{<: Packet}) = t()
-has_id(packet::Packet) = false
-needs_id(packet::Packet) = false
+function write(s::IO, p::Packet) end
+read(::IO, ::UInt8, T::Type{<: Packet}) = T()
+has_id(::Packet) = false
+needs_id(::Packet) = false
 
 abstract type HasId <: Packet end
-has_id(packet::HasId) = true
-needs_id(packet::HasId) = true
+has_id(::HasId) = true
+needs_id(::HasId) = true
 
 abstract type Ack <: HasId end
 write(s::IO, packet::Ack) = mqtt_write(s, packet.id)
-read(s::IO, flags::UInt8, t::Type{<: Ack}) = t(mqtt_read(s, UInt16))
-needs_id(packet::Ack) = false
+read(s::IO, ::UInt8, T::Type{<: Ack}) = T(mqtt_read(s, UInt16))
+needs_id(::Ack) = false
 
 """
     Message(topic, payload; [dup=false], [qos=AT_MOST_ONCE], [retain=false])
