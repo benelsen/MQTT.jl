@@ -266,11 +266,20 @@ function handle(c::Client, packet::Pingresp)
 end
 
 """
-    connect(client, opts, [async=false])
+    connect(client, opts; [async=false])
 
 Connects to a broker using the specified options.
 
-If `async` is `true` a `Future` is returned. Otherwise the function blocks till the operation is completed.
+# Arguments
+
+- `client::Client`: client needs to be instantiated before connecting, but can be
+    reconnected using `connect`
+- `opts::ConnectOpts`: connection options to be used
+
+# Keywords
+
+-  `async::Bool`: if `true` a `Future` is returned, therwise the function blocks until
+    the client is connected or the operation failed.
 
 See also [`get`](@ref).
 """
