@@ -1,4 +1,4 @@
-Topic = Tuple{String, QOS}
+Topic = Tuple{String, QoS}
 Base.show(io::IO, x::Topic) = print(io, "(", join(x, ", "), ")")
 
 struct Subscribe <: HasId

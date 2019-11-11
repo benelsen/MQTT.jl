@@ -16,7 +16,7 @@ function read(s::IO, flags::UInt8, ::Type{Publish})
         id = mqtt_read(s, UInt16)
     end
     payload = take!(s)
-    return Publish(UInt8(PUBLISH), id, Message(dup, QOS(qos), retain, topic, payload))
+    return Publish(UInt8(PUBLISH), id, Message(dup, QoS(qos), retain, topic, payload))
 end
 
 function write(s::IO, packet::Publish)
@@ -27,13 +27,8 @@ function write(s::IO, packet::Publish)
     write(s, packet.message.payload)
 end
 
-function needs_id(packet::Publish)
-    return packet.message.qos != AT_MOST_ONCE
-end
-
-function has_id(packet::Publish)
-    return packet.message.qos != AT_MOST_ONCE
-end
+needs_id(packet::Publish) = packet.message.qos != AT_MOST_ONCE
+has_id(packet::Publish) = packet.message.qos != AT_MOST_ONCE
 
 Base.show(io::IO, x::Publish) = print(io, "publish[", ((x.message.qos == AT_MOST_ONCE) ? "" : "id: $(x.id) "), "message: ", x.message, "]")
 
