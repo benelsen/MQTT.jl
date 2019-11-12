@@ -1,7 +1,7 @@
 # MQTT.jl
 
-[![Build Status](https://travis-ci.org/rweilbacher/MQTT.jl.svg?branch=master)](https://travis-ci.org/rweilbacher/MQTT.jl)
-[![Coverage Status](https://coveralls.io/repos/github/kivaari/MQTT.jl/badge.svg?branch=master)](https://coveralls.io/github/kivaari/MQTT.jl?branch=master)
+[![Docs](https://img.shields.io/badge/docs-dev-blue.svg)](https://benelsen.github.io/MQTT.jl/julia1-support/)
+[![Build Status](https://travis-ci.org/benelsen/MQTT.jl.svg?branch=julia1-support)](https://travis-ci.org/benelsen/MQTT.jl)
 
 MQTT Client Library
 

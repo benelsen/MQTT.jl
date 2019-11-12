@@ -9,4 +9,6 @@ makedocs(
 
 deploydocs(
     repo = "github.com/benelsen/MQTT.jl.git",
+    devbranch = "julia1-support",
+    devurl = "julia1-support",    
 )
