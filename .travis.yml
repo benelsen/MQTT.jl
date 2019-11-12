@@ -2,8 +2,6 @@ language: julia
 
 os:
   - linux
-  - osx
-  - windows
 
 julia:
   - 1.2
@@ -19,6 +17,15 @@ jobs:
     - os: windows
     - julia: nightly
     - julia: 1.3
+  exclude:
+    - julia: 1.3
+      os: osx
+    - julia: 1.3
+      os: windows
+    - julia: nightly
+      os: osx
+    - julia: nightly
+      os: windows
   include:
     - stage: "Documentation"
       julia: 1.2
