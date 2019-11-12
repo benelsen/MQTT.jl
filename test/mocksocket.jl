@@ -15,8 +15,10 @@ const UNSUBACK = 0xB0
 const PINGREQ = 0xC0
 const PINGRESP = 0xD0
 const DISCONNECT = 0xE0
-const QOS_1_BYTE = 0x02
-const QOS_2_BYTE = 0x04
+
+# qos is in bits 2-3 of the header byte
+const QOS_1_BYTE = 0x01 << 1
+const QOS_2_BYTE = 0x02 << 1
 
 mutable struct TestFileHandler <: IO
     out_channel::Channel{UInt8}

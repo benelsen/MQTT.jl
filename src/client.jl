@@ -115,12 +115,14 @@ function packet_id(c::Client)
 end
 
 function complete(c::Client, id::UInt16, value=nothing)
-    if haskey(c.in_flight, id)
-        future = c.in_flight[id]
-        put!(future, value)
-        delete!(c.in_flight, id)
-    else
-        disconnect(c, MQTTException("protocol error"))
+    if id != 0
+        if haskey(c.in_flight, id)
+            future = c.in_flight[id]
+            put!(future, value)
+            delete!(c.in_flight, id)
+        else
+            disconnect(c, MQTTException("protocol error complete"))
+        end
     end
 end
 
@@ -141,8 +143,9 @@ function send_packet(c::Client, packet::Packet, async::Bool=false)
     future = Future()
     put!(c.queue, (packet, future))
     if async
-        return future
+        future
     else
+        @debug "send_packet" async packet
         get(future)
     end
 end
@@ -208,19 +211,14 @@ end
 
 function keep_alive_timer(c::Client)
     check_interval = (c.opts.keep_alive > 10) ? 5 : c.opts.keep_alive / 2
-    @debug check_interval
-    t = Timer(0, interval = check_interval)
+    @debug "keep_alive_timer" check_interval
+    t = Timer(check_interval, interval = check_interval)
     waiter = Task(
         function()
             @debug "keep alive started"
             while isopen(t)
+                wait(t)
                 keep_alive(c)
-                try
-                    wait(t)
-                catch e
-                    isa(e, EOFError) || rethrow()
-                end
-                # yield()
             end
             @debug "keep alive stopped"
         end
@@ -324,7 +322,7 @@ function disconnect(client::Client, reason::Union{Exception,Nothing}=nothing)
         Sockets.close(client.io)
         client.on_disconnect(reason)
     else
-        @debug("Already disconnecting")
+        @warn("Already disconnecting")
     end
 end
 

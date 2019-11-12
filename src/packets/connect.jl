@@ -44,7 +44,7 @@ function write(s::IO, packet::Connect)
     end
 end
 
-has_id(::Connect) = true
+has_id(::Connect) = false
 
 Base.show(io::IO, x::Connect) = print(io, "connect[protocol_name: '", x.protocol_name, "'",
     ", protocol_level: ", x.protocol_level,
@@ -53,7 +53,8 @@ Base.show(io::IO, x::Connect) = print(io, "connect[protocol_name: '", x.protocol
     ", client_id: '", x.client_id, "'",
     ", will: ", (x.will, "none"),
     ", username: ", (x.username, "none"),
-    ", password: ", (x.password, "none"), "]")
+    ", password: ", (x.password, "none"),
+    ", id: ", x.id, "]")
 
 struct Connack <: Packet
     header::UInt8
