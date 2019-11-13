@@ -1,4 +1,5 @@
-@info "Running packet tests"
+include("mocksocket.jl")
+using Test, MQTT
 
 function is_out_correct(filename_expected::AbstractString, actual::Channel{UInt8}, mid::UInt16)
     file_data = read_all_to_arr(filename_expected)
