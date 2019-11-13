@@ -81,6 +81,9 @@ disconnect(client)
 - no support for automatic retransmission of PUBLISH packets
 - only [MQTT 3.1.1][mqtt-spec] (Protocol Level 4) is implemented
 - conformance as a client per [MQTT 3.1.1][mqtt-spec-conformance] is not tested
+- 32 bit arm (e.g. Raspberry Pi) can't be tested on travis right now.
+    It has been shown to work on a Raspberry Pi though.
+    For all tested configurations see [build status][travis-url].
 
 [dev-docs-url]: https://benelsen.github.io/MQTT.jl/julia1-support/
 
