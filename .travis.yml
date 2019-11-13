@@ -18,13 +18,8 @@ jobs:
     - os: osx
     - os: windows
     - julia: nightly
-    - julia: 1.3
     - arch: arm64
   exclude:
-    - julia: 1.3
-      os: osx
-    - julia: 1.3
-      os: windows
     - julia: nightly
       os: osx
     - julia: nightly
