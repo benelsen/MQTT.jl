@@ -1,36 +1,35 @@
 # MQTT.jl
 
-[![Docs](https://img.shields.io/badge/docs-dev-blue.svg)](https://benelsen.github.io/MQTT.jl/julia1-support/)
-[![Build Status](https://travis-ci.org/benelsen/MQTT.jl.svg?branch=julia1-support)](https://travis-ci.org/benelsen/MQTT.jl)
+[![Docs](https://img.shields.io/badge/docs-dev-blue.svg)][dev-docs-url]
+[![Build Status][travis-badge-url]][travis-url]
 
 MQTT Client Library
 
 This code builds a library which enables applications to connect to an MQTT broker to publish messages, and to subscribe to topics and receive published messages.
 
-This library supports: fully asynchronous operation, file persistence
-
 ## Contents
- * [Installation](#installation)
- * [Testing](#testing)
- * [Usage](#usage)
+* [Installation](#installation)
+* [Testing](#testing)
+* [Usage](#usage)
     * [Getting started](#getting-started)
     * [Basic example](#basic-example)
+* [Limitations](#limitations)
 
 ## Installation
 ```julia-repl
-pkg> add MQTT
+pkg> add https://github.com/benelsen/MQTT.jl
 ```
 
 ```julia-repl
-julia> using Pkg; Pkg.add("MQTT")
+julia> using Pkg; Pkg.clone("https://github.com/benelsen/MQTT.jl")
 ```
 
 ## Usage
 
 ### Getting started
 To use this library you need to follow at least these steps:
-1. Define an `on_msg` callback function.
-2. Create an instance of the `Client` struct and pass it your `on_msg` function.
+1. Define `on_message` and `on_disconnect` callback functions.
+2. Create an instance of the `Client` struct and pass it your callback functions.
 3. Call the connect method with your `Client` instance.
 4. Exchange data with the broker through publish, subscribe and unsubscribe.
 5. Disconnect from the broker. (Not strictly necessary, if you don't want to resume the session but considered good form and less likely to crash).
@@ -75,3 +74,18 @@ unsubscribe(client, "jlExample")
 # But this is considered good form and needed if you want to resume this session later.
 disconnect(client)
 ```
+
+## Limitations
+- session state is limited
+- no support auto-reconnect
+- no support for automatic retransmission of PUBLISH packets
+- only [MQTT 3.1.1][mqtt-spec] (Protocol Level 4) is implemented
+- conformance as a client per [MQTT 3.1.1][mqtt-spec-conformance] is not tested
+
+[dev-docs-url]: https://benelsen.github.io/MQTT.jl/julia1-support/
+
+[travis-url]: https://travis-ci.org/benelsen/MQTT.jl
+[travis-badge-url]: https://travis-ci.org/benelsen/MQTT.jl.svg?branch=julia1-support
+
+[mqtt-spec]: http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/errata01/os/mqtt-v3.1.1-errata01-os-complete.html
+[mqtt-spec-conformance]: http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/errata01/os/mqtt-v3.1.1-errata01-os-complete.html#_Toc442180942
