@@ -5,16 +5,6 @@ struct MQTTException <: Exception
     msg::AbstractString
 end
 
-mutable struct ConnectOpts
-    clean_session::Bool
-    keep_alive::UInt16
-    client_id::String
-    will::Union{Nothing, Message}
-    username::Union{Nothing, String}
-    password::Union{Nothing, Array{UInt8}}
-    get_io::Function
-end
-
 """
     ConnectOpts(host, [port=1883]; <keyword arguments>)
     ConnectOpts(get_io; <keyword arguments>)
@@ -47,21 +37,39 @@ opts = ConnectOpts(
 )
 ```
 """
-function ConnectOpts(
-    get_io::Function;
-    username::Union{Nothing, String}=nothing, password::Union{Nothing, Vector{UInt8}}=nothing,
-    client_id::String="", clean_session::Bool=true, keep_alive::UInt16=0x0000,
-    will::Union{Nothing, Message}=nothing
-)
-    ConnectOpts(clean_session, keep_alive, client_id, will, username, password, get_io)
+mutable struct ConnectOpts
+    clean_session::Bool
+    keep_alive::UInt16
+    client_id::String
+    will::Union{Nothing, Message}
+    username::Union{Nothing, String}
+    password::Union{Nothing, Vector{UInt8}}
+    get_io::Function
+
+    function ConnectOpts(
+        get_io::Function=() -> Sockets.TCPSocket();
+        username::Union{Nothing, String}=nothing, password::Union{Nothing, Vector{UInt8}}=nothing,
+        client_id::String="", clean_session::Bool=true, keep_alive::UInt16=0x0000,
+        will::Union{Nothing, Message}=nothing
+    )
+        if sizeof(client_id) > 65535
+            throw(MQTTException("Client identifier can not be longer than 65535 bytes"))
+        end
+        if !clean_session && client_id === ""
+            throw(MQTTException("Resuming a session requires a non-zero length Client identifier"))
+        end
+        if !isnothing(username) && sizeof(username) > 65535
+            throw(MQTTException("Username can not be longer than 65535 bytes"))
+        end
+        if !isnothing(password) && length(password) > 65535
+            throw(MQTTException("Password can not be longer than 65535 bytes"))
+        end
+        new(clean_session, keep_alive, client_id, will, username, password, get_io)
+    end
 end
 
 function ConnectOpts(host::AbstractString, port::Integer=1883; kwargs...)
     ConnectOpts(() -> Sockets.connect(host, port); kwargs...)
-end
-
-function ConnectOpts(;kwargs...)
-    ConnectOpts(() -> TCPSocket(); kwargs...)
 end
 
 """
