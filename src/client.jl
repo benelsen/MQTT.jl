@@ -1,5 +1,6 @@
 using Base.Threads
 import Sockets
+import Sockets: connect
 
 struct MQTTException <: Exception
     msg::AbstractString
