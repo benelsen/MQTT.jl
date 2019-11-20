@@ -10,29 +10,41 @@ const PACKETS = Dict{PacketType, DataType}(
     PINGRESP => Pingresp)
 
 function read_packet(s::IO)
+    @debug "read_packet" bytesavailable(s)
+
     # read fixed header
-    header = read(s, UInt8)
-    packet_type = PacketType(header & 0xF0)
-    flags = header & 0x0F
+    buf = Vector{UInt8}(undef, 1)
+    readbytes!(s, buf, 1; all = true)
+
+    packet_type = PacketType(buf[1] & 0xF0)
+    flags = buf[1] & 0x0F
+
     len = read_len(s)
+    resize!(buf, len)
 
     # read variable header and payload into buffer
-    buffer = PipeBuffer(read(s, len))
+    readbytes!(s, buf, len; all = true)
 
-    packet = read(buffer, flags, PACKETS[packet_type])
+    packet = read(PipeBuffer(buf), flags, PACKETS[packet_type])
     return packet
 end
 
 function write_packet(s::IO, packet::Packet)
+    # To support IOs that prohibit byte-by-byte methods (e.g. MbedTLS) we write packets to
+    # buffers then write the whole buffer to the socket.
+    out = PipeBuffer()
+
     # write variable header and payload to determine length
     buffer = PipeBuffer()
     write(buffer, packet)
     data = take!(buffer)
 
     # write fixed header
-    write(s, packet.header)
-    write_len(s, length(data))
+    write(out, packet.header)
+    write_len(out, length(data))
 
     # write variable header and payload
-    write(s, data)
+    write(out, data)
+
+    write(s, take!(out))
 end

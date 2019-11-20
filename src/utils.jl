@@ -33,16 +33,17 @@ function write_len(s::IO, len::Int)
 end
 
 function read_len(s::IO)
+    buf = Vector{UInt8}(undef, 1)
     multiplier = 1
     value = 0
     while true
-        b = read(s, UInt8)
-        value += (b & 127) * multiplier
+        readbytes!(s, buf, 1; all = true)
+        value += (buf[1] & 127) * multiplier
         multiplier *= 128
         if multiplier > 128 * 128 * 128
             throw(ErrorException("malformed remaining length"))
         end
-        if (b & 128) == 0
+        if (buf[1] & 128) == 0
             break
         end
     end
