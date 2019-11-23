@@ -2,6 +2,7 @@
 
 [![Docs](https://img.shields.io/badge/docs-dev-blue.svg)][dev-docs-url]
 [![Build Status][travis-badge-url]][travis-url]
+[![Project Status: WIP – Initial development is in progress, but there has not yet been a stable, usable release suitable for the public.](repostatus-wip-svg)](repostatus-wip)
 
 MQTT Client Library
 
@@ -89,6 +90,9 @@ disconnect(client)
 
 [travis-url]: https://travis-ci.org/benelsen/MQTT.jl
 [travis-badge-url]: https://travis-ci.org/benelsen/MQTT.jl.svg?branch=julia1-support
+
+[repostatus-wip]: https://www.repostatus.org/#wip
+[repostatus-wip-svg]: https://www.repostatus.org/badges/latest/wip.svg
 
 [mqtt-spec]: http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/errata01/os/mqtt-v3.1.1-errata01-os-complete.html
 [mqtt-spec-conformance]: http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/errata01/os/mqtt-v3.1.1-errata01-os-complete.html#_Toc442180942
