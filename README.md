@@ -2,7 +2,7 @@
 
 [![Docs](https://img.shields.io/badge/docs-dev-blue.svg)][dev-docs-url]
 [![Build Status][travis-badge-url]][travis-url]
-[![Project Status: WIP – Initial development is in progress, but there has not yet been a stable, usable release suitable for the public.](repostatus-wip-svg)](repostatus-wip)
+[![Project Status: WIP – Initial development is in progress, but there has not yet been a stable, usable release suitable for the public.][repostatus-wip-svg]][repostatus-wip]
 
 MQTT Client Library
 
