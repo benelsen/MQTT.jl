@@ -92,7 +92,7 @@ mutable struct Client
     last_id::UInt16
     in_flight::Dict{UInt16, Future}
     queue::Channel{Tuple{Packet, Future}}
-    disconnecting::Atomic{UInt8}
+    disconnecting::Atomic{Bool}
     last_sent::Atomic{Float64}
     last_received::Atomic{Float64}
     ping_outstanding::Atomic{UInt16}
@@ -107,7 +107,7 @@ mutable struct Client
         0x0000,
         Dict{UInt16, Future}(),
         Channel{Tuple{Packet, Future}}(60),
-        Atomic{UInt8}(0x00),
+        Atomic{Bool}(false),
         Atomic{Float64}(),
         Atomic{Float64}(),
         Atomic{UInt16}(),
@@ -116,6 +116,7 @@ mutable struct Client
 end
 
 function packet_id(c::Client)
+    # TODO: check if id is already in use. Unlikely but possible.
     if c.last_id == typemax(UInt16)
         c.last_id = 0
     end
@@ -162,16 +163,17 @@ end
 function in_loop(c::Client)
     @debug "in started"
     try
-        while true
+        while isreadable(c.io)
             @debug "in wait"
             packet = read_packet(c.io)
             atomic_xchg!(c.last_received, time())
             @debug "in " packet
             handle(c, packet)
+            @debug "in done"
         end
+        @debug "in socket not readable"
     catch e
-        @debug "in error"
-        @debug e
+        @debug "in error" e
         if isa(e, EOFError)
             e = MQTTException("connection lost")
         end
@@ -183,7 +185,7 @@ end
 function out_loop(c::Client)
     @debug "out started"
     try
-        while true
+        while iswritable(c.io)
             @debug "out wait"
             packet, future = take!(c.queue)
 
@@ -200,16 +202,17 @@ function out_loop(c::Client)
 
             atomic_xchg!(c.last_sent, time())
             write_packet(c.io, packet)
-            @debug "out " packet
+            @debug "out sent" packet
 
             # complete the futures of packets that don't need acknowledgment
             if !has_id(packet)
                 put!(future, 0)
             end
+            @debug "out done"
         end
+        @debug "out socket not writeable"
     catch e
-        @debug "out error"
-        @debug e
+        @debug "out error" e
         if isa(e, ArgumentError)
             e = MQTTException("connection lost")
         end
@@ -260,7 +263,7 @@ function handle(c::Client, packet::Connack)
     if packet.return_code != 0
         r = ErrorException(connack_return_codes[packet.return_code])
     end
-    complete(c, 0x0000, r)
+    # complete(c, 0x0000, r)
 end
 
 function handle(c::Client, packet::Publish)
@@ -298,7 +301,7 @@ function connect(client::Client, opts::ConnectOpts; async::Bool=false)
 
     client.in_flight = Dict{UInt16, Future}()
     client.queue = Channel{Tuple{Packet, Future}}(client.queue.sz_max)
-    atomic_xchg!(client.disconnecting, 0x00)
+    atomic_xchg!(client.disconnecting, false)
 
     @async out_loop(client)
     @async in_loop(client)
@@ -321,8 +324,8 @@ Disconnects the `Client` instance gracefully, shuts down the background tasks an
 """
 function disconnect(client::Client, reason::Union{Exception,Nothing}=nothing)
     # ignore errors while disconnecting
-    if client.disconnecting[] == 0x00
-        atomic_xchg!(client.disconnecting, 0x01)
+    if client.disconnecting[] == false
+        atomic_xchg!(client.disconnecting, true)
         close(client.keep_alive_timer)
         if !(typeof(reason) <: Exception)
             send_packet(client, Disconnect())
@@ -331,7 +334,7 @@ function disconnect(client::Client, reason::Union{Exception,Nothing}=nothing)
         Sockets.close(client.io)
         client.on_disconnect(reason)
     else
-        @warn("Already disconnecting")
+        @debug("Already disconnecting")
     end
 end
 

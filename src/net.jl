@@ -14,7 +14,11 @@ function read_packet(s::IO)
 
     # read fixed header
     buf = Vector{UInt8}(undef, 1)
-    readbytes!(s, buf, 1; all = true)
+    rb = readbytes!(s, buf, 1)
+    @debug "read_packet read bytes" rb 1
+    if rb != 1
+        throw(error("read $(rb) instead of $(1) bytes from io"))
+    end
 
     packet_type = PacketType(buf[1] & 0xF0)
     flags = buf[1] & 0x0F
@@ -23,7 +27,11 @@ function read_packet(s::IO)
     resize!(buf, len)
 
     # read variable header and payload into buffer
-    readbytes!(s, buf, len; all = true)
+    rb = readbytes!(s, buf, len)
+    @debug "read_packet read bytes" rb len
+    if rb != len
+        throw(error("read $(rb) instead of $(len) bytes from io"))
+    end
 
     packet = read(PipeBuffer(buf), flags, PACKETS[packet_type])
     return packet

@@ -37,7 +37,12 @@ function read_len(s::IO)
     multiplier = 1
     value = 0
     while true
-        readbytes!(s, buf, 1; all = true)
+        rb = readbytes!(s, buf, 1)
+        @debug "read_len read bytes" rb 1
+        if rb != 1
+            throw(error("read $(rb) instead of $(1) bytes from io"))
+        end
+
         value += (buf[1] & 127) * multiplier
         multiplier *= 128
         if multiplier > 128 * 128 * 128

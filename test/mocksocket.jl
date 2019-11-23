@@ -1,4 +1,5 @@
-import Base: read, read!, close, write, put!
+import Base: read, read!, readbytes!, close, write, put!, bytesavailable, isreadable, iswritable
+import MQTT: read_len
 
 # commands
 const CONNECT = 0x10
@@ -48,6 +49,15 @@ function read(fh::TestFileHandler, length::Integer)
         append!(data, take!(fh.in_channel))
     end
     return data
+end
+
+isreadable(fh::TestFileHandler) = isopen(fh.in_channel)
+iswritable(fh::TestFileHandler) = isopen(fh.out_channel)
+
+function readbytes!(fh::TestFileHandler, buf::AbstractVector{UInt8}, nb::Integer=length(buf))
+    data = read(fh, nb)
+    buf[1:length(data)] = data
+    length(data)
 end
 
 function close(fh::TestFileHandler)

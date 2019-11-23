@@ -8,9 +8,8 @@ struct Connect <: Packet
     will::Union{Nothing, Message}
     username::Union{Nothing, String}
     password::Union{Nothing, Array{UInt8}}
-    id::UInt16
 end
-Connect(clean_session::Bool, keep_alive::UInt16, client_id::String, will::Union{Nothing, Message}, username::Union{Nothing, String}, password::Union{Nothing, Array{UInt8}}) = Connect(UInt8(CONNECT), "MQTT", 0x04, clean_session, keep_alive, client_id, will, username, password, 0)
+Connect(clean_session::Bool, keep_alive::UInt16, client_id::String, will::Union{Nothing, Message}, username::Union{Nothing, String}, password::Union{Nothing, Array{UInt8}}) = Connect(UInt8(CONNECT), "MQTT", 0x04, clean_session, keep_alive, client_id, will, username, password)
 
 function write(s::IO, packet::Connect)
     # variable header
@@ -44,8 +43,6 @@ function write(s::IO, packet::Connect)
     end
 end
 
-has_id(::Connect) = false
-
 Base.show(io::IO, x::Connect) = print(io, "connect[protocol_name: '", x.protocol_name, "'",
     ", protocol_level: ", x.protocol_level,
     ", clean_session: ", x.clean_session,
@@ -53,8 +50,7 @@ Base.show(io::IO, x::Connect) = print(io, "connect[protocol_name: '", x.protocol
     ", client_id: '", x.client_id, "'",
     ", will: ", (x.will, "none"),
     ", username: ", (x.username, "none"),
-    ", password: ", (x.password, "none"),
-    ", id: ", x.id, "]")
+    ", password: ", (x.password, "none"), "]")
 
 struct Connack <: Packet
     header::UInt8
